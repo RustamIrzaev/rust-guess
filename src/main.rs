@@ -1,4 +1,4 @@
-use std::cmp::{Ordering, Reverse};
+use std::cmp::{Ordering};
 use std::fs::File;
 use std::io;
 use serde::{Deserialize, Serialize};
@@ -47,15 +47,15 @@ fn main() {
             Ok(num) => num,
             Err(_) => continue
         };
-        
+
+        tries += 1;
+
         match number.cmp(&value) {
             Ordering::Greater => {
-                tries += 1;
                 println!("Number is < than {number}");
                 number_maximum = number;
             },
             Ordering::Less => {
-                tries += 1;
                 println!("Number is > than {number}");
                 number_minimum = number;
             },
@@ -69,15 +69,18 @@ fn main() {
 
                 let name = ask_for_name();
                 let new_entry = Score {
-                    name: name.trim().to_owned(),
                     tries,
+                    name: name.trim().to_owned(),
                     completed_at: end_time,
                     completed_for_msec: msec_diff,
                 };
 
                 scores.push(new_entry);
-                scores.sort_by_key(|entry| Reverse(entry.tries));
+                // scores.sort_by_key(|entry| Reverse(entry.tries));
+                scores.sort_by_key(|entry| entry.tries);
                 save_scores(&scores);
+
+                print_scores(&scores);
 
                 break;
             },
@@ -125,4 +128,30 @@ fn save_scores(scores: &Vec<Score>) {
     };
 
     file.write_all(json.as_bytes()).unwrap();
+}
+
+fn print_scores(scores: &Vec<Score>) {
+    // print!("\x1B[2J\x1B[1;1H");
+    println!();
+    println!("Scores");
+
+    for i in 0..scores.len() {
+        let item = scores.get(i).unwrap();
+        println!("{}.  {}\t{} tries  {}ms", i+1, item.name, item.tries, item.completed_for_msec);
+    }
+
+    let min_tries = scores.iter().map(|x| x.tries).min().unwrap();
+    let max_tries = scores.iter().map(|x| x.tries).max().unwrap();
+    let sum_tries: i32 = scores.iter().map(|x| x.tries).sum();
+    let average_tries = sum_tries as f32 / scores.len() as f32;
+
+    let sum_time: i64 = scores.iter().map(|x| x.completed_for_msec).sum();
+    let average_time = sum_time / scores.len() as i64;
+
+    println!();
+    println!("Minimum tries: {min_tries}");
+    println!("Maximum tries: {max_tries}");
+    println!("Average tries: {}", average_tries.round());
+    println!();
+    println!("Average time per a game (ms): {}", average_time);
 }
