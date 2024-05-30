@@ -1,22 +1,13 @@
+mod scores;
+
 use std::cmp::{Ordering};
-use std::fs::File;
 use std::io;
-use serde::{Deserialize, Serialize};
-use std::io::{BufReader, Write};
 use rand::Rng;
 use chrono::prelude::*;
-
-#[derive(Serialize, Deserialize)]
-struct Score {
-    name: String,
-    tries: i32,
-    completed_at: DateTime<Local>,
-    completed_for_msec: i64,
-}
+use crate::scores::{load_scores, save_scores, Score};
 
 const NUM_MINIMUM: i32 = 1;
 const NUM_MAXIMUM: i32 = 100;
-const LEADERBOARD_FILE_NAME: &str = "data.rom";
 
 fn main() {
     print!("\x1B[2J\x1B[1;1H"); // clear the console :)
@@ -98,36 +89,7 @@ fn ask_for_name() -> String {
         .read_line(&mut name)
         .expect("waiting for your name");
 
-    return name;
-}
-
-fn load_scores() -> Vec<Score> {
-    let file = match File::open(LEADERBOARD_FILE_NAME) {
-        Ok(f) => f,
-        Err(_) => return Vec::new(),
-    };
-    let reader = BufReader::new(file);
-
-    let leaderboard: Vec<Score> = match serde_json::from_reader(reader) {
-        Ok(r) => r,
-        Err(_) => return Vec::new()
-    };
-
-    return leaderboard
-}
-
-fn save_scores(scores: &Vec<Score>) {
-    let json = match serde_json::to_string(scores) {
-        Ok(r) => r,
-        Err(_) => return
-    };
-
-    let mut file = match File::create(LEADERBOARD_FILE_NAME) {
-        Ok(f) => f,
-        Err(_) => return,
-    };
-
-    file.write_all(json.as_bytes()).unwrap();
+    name
 }
 
 fn print_scores(scores: &Vec<Score>) {
@@ -135,10 +97,9 @@ fn print_scores(scores: &Vec<Score>) {
     println!();
     println!("Scores");
 
-    for i in 0..scores.len() {
-        let item = scores.get(i).unwrap();
-        println!("{}.  {}\t{} tries  {}ms", i+1, item.name, item.tries, item.completed_for_msec);
-    }
+    scores.iter().enumerate().take(10).for_each(|(i, score)| {
+        println!("{}.  {}\t{} tries  {}ms", i+1, score.name, score.tries, score.completed_for_msec);
+    });
 
     let min_tries = scores.iter().map(|x| x.tries).min().unwrap();
     let max_tries = scores.iter().map(|x| x.tries).max().unwrap();
@@ -153,5 +114,5 @@ fn print_scores(scores: &Vec<Score>) {
     println!("Maximum tries: {max_tries}");
     println!("Average tries: {}", average_tries.round());
     println!();
-    println!("Average time per a game (ms): {}", average_time);
+    println!("Average time per a game: {}ms", average_time);
 }
