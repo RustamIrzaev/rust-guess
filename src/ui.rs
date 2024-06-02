@@ -7,8 +7,6 @@ use ratatui:: {
     text::{Text, Span, Line},
     Frame,
 };
-use ratatui::layout::Margin;
-use ratatui::widgets::{Scrollbar, ScrollbarOrientation, ScrollbarState};
 use crate::app::{App, CurrentScreen};
 use crate::scores::{load_scores, Score};
 
@@ -181,8 +179,9 @@ fn render_leaderboard_table(f: &mut Frame, app: &mut App, area: Rect, scores: &V
                 .style(Style::new().fg(tailwind::SLATE.c600).bg(color)),
             Cell::from(Text::from(format!("{}", data.name)))
                 .style(Style::new().fg(tailwind::SLATE.c200).bg(color)),
-            Cell::from(Text::from(format!("{}", data.tries)))
-                .style(Style::new().fg(tailwind::SLATE.c200).bg(color)),
+            Cell::from(Text::from(format!("{}", data.tries))
+                .centered())
+                .style(Style::new().fg(tailwind::GREEN.c300).bg(color)),
             Cell::from(Text::from(format!("{}ms", data.completed_for_msec)))
                 .style(Style::new().fg(tailwind::SLATE.c600).bg(color)),
         ])
