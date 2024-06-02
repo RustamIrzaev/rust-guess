@@ -1,12 +1,16 @@
 use ratatui:: {
-    layout::{Layout, Direction, Constraint},
-    widgets::{Block, Borders, Paragraph, BorderType, List, ListItem},
-    style::{Style, Color},
+    layout::{Layout, Constraint, Rect},
+    widgets::{Block, Borders, Paragraph, BorderType,
+              List, ListItem, Cell, Row, Table, HighlightSpacing},
+    style::{Style, Color, Modifier, Stylize,
+            palette::{tailwind}},
     text::{Text, Span, Line},
     Frame,
 };
-use ratatui::style::Modifier;
+use ratatui::layout::Margin;
+use ratatui::widgets::{Scrollbar, ScrollbarOrientation, ScrollbarState};
 use crate::app::{App, CurrentScreen};
+use crate::scores::{load_scores, Score};
 
 const INFO_TEXT: &str = "(↑) move up | (↓) move down | (Enter) select";
 
@@ -19,43 +23,39 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
     match app.current_screen {
         CurrentScreen::Menu => {
-            let title = Paragraph::new(Line::from("MAIN MENU"))
-                .style(Style::new().fg(Color::White).bg(Color::DarkGray))
-                .centered()
-                .block(
-                    Block::bordered()
-                        .border_type(BorderType::Thick)
-                        .border_style(Style::new().fg(Color::DarkGray)),
-                );
-
-            f.render_widget(title, rects[0]);
+            f.render_widget({
+                Paragraph::new(Line::from("MAIN MENU"))
+                    .white().on_dark_gray()
+                    .centered()
+                    .block(Block::bordered()
+                               .border_type(BorderType::Thick)
+                               .border_style(Style::new().fg(Color::DarkGray)),
+                    )
+            }, rects[0]);
 
             let mut menu_items = Vec::<ListItem>::new();
 
             for item in app.main_menu_items.iter() {
-                menu_items.push(ListItem::new(Span::styled(
-                    item,
-                    Style::default().fg(Color::White),
-                )));
+                menu_items.push(ListItem::new(Text::from(item.to_owned())).white());
             }
 
-            let list = List::new(menu_items)
-                .block(Block::default().borders(Borders::ALL))
-                .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
-                .highlight_symbol(">> ");
+            f.render_stateful_widget({
+                 List::new(menu_items)
+                     .block(Block::default().borders(Borders::ALL))
+                     .highlight_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
+                     .highlight_symbol(">> ")
+            }, rects[1], &mut app.main_menu_item_selected);
 
-            f.render_stateful_widget(list, rects[1], &mut app.main_menu_item_selected);
-
-            let info_footer = Paragraph::new(Line::from(INFO_TEXT))
-                .style(Style::new().fg(Color::White).bg(Color::DarkGray))
-                .centered()
-                .block(
-                    Block::bordered()
-                        .border_type(BorderType::Thick)
-                        .border_style(Style::new().fg(Color::DarkGray)),
-                );
-
-            f.render_widget(info_footer, rects[2]);
+            f.render_widget({
+                Paragraph::new(Line::from(INFO_TEXT))
+                    .white().on_dark_gray()
+                    .centered()
+                    .block(
+                        Block::bordered()
+                            .border_type(BorderType::Thick)
+                            .border_style(Style::new().fg(Color::DarkGray)),
+                    )
+            }, rects[2]);
         },
         CurrentScreen::Leaderboard => {
             f.render_widget(create_header("Leaderboard"), rects[0]);
@@ -65,17 +65,31 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                 Constraint::Percentage(50),
             ]).split(rects[2]);
 
+            let scores = load_scores();
+
+            render_leaderboard_table(f, app, rects[1], &scores);
+
             f.render_widget(create_footer_left_part(&app), footer_rects[0]);
             f.render_widget(create_footer_navigation("(q) to back to menu"), footer_rects[1]);
         },
         CurrentScreen::Quit => {
             f.render_widget(create_header("End the game? (y/n)"), rects[0]);
         },
-        _ => {
+        CurrentScreen::Game => {
             f.render_widget(create_header("Guess the number!"), rects[0]);
 
-            let list = create_main_block(&app);
-            f.render_widget(list, rects[1]);
+            f.render_widget({
+                let mut list_items = Vec::<ListItem>::new();
+
+                for item in app.user_input_history.iter() {
+                    list_items.push(ListItem::new(Line::from(Span::styled(
+                        format!("{}", item.user_value),
+                        Style::default().fg(Color::Gray),
+                    ))));
+                }
+
+                List::new(list_items)
+            }, rects[1]);
 
             let footer_rects = Layout::horizontal([
                 Constraint::Percentage(50),
@@ -88,31 +102,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
     }
 }
 
-fn create_main_block<'a>(app: &App) -> List<'a> {
-    let mut list_items = Vec::<ListItem>::new();
-
-    for item in app.user_input_history.iter() {
-        list_items.push(ListItem::new(Line::from(Span::styled(
-            format!("{}", item.user_value),
-            Style::default().fg(Color::Gray),
-        ))));
-    }
-
-    let list = List::new(list_items);
-
-    return list;
-}
-
 fn create_header<'a>(title_text: &str) -> Paragraph<'a> {
-    let title_block = Block::default()
-        .borders(Borders::ALL)
-        .style(Style::default());
-
-    let title = Paragraph::new(Text::styled(
-        title_text.to_owned(),
-        Style::default().fg(Color::Green),
-    ))
-        .block(title_block).centered();
+    let title = Paragraph::new(Text::from(title_text.to_owned()).green())
+        .block(Block::default().borders(Borders::ALL))
+        .centered();
 
     return title;
 }
@@ -128,12 +121,15 @@ fn create_footer_left_part<'a>(app: &App) -> Paragraph<'a> {
                 _ => Color::Red,
             };
             let span_style = Style::default().fg(guess_color);
-            
+
             vec![
                 Span::styled("guesses made", span_style),
                 Span::styled(" : ", span_style),
                 Span::styled(guesses_made.to_string(), span_style),
             ]},
+        CurrentScreen::Leaderboard => {
+            vec![Span::from("Top 15 shown").light_green()]
+        },
         _ => {vec![]}
     };
 
@@ -158,4 +154,83 @@ fn create_footer_navigation<'a>(text: &str) -> Paragraph<'a> {
         .block(Block::default().borders(Borders::ALL));
 
     return footer_hotkeys;
+}
+
+
+
+fn render_leaderboard_table(f: &mut Frame, app: &mut App, area: Rect, scores: &Vec<Score>) {
+    let header_style = Style::default()
+        .fg(tailwind::SLATE.c200)
+        .bg(tailwind::BLUE.c900);
+
+    let header = ["#", "Name", "Guess tries", "Game completion time"]
+        .into_iter()
+        .map(Cell::from)
+        .collect::<Row>()
+        .style(header_style)
+        .height(1);
+
+    let rows = scores.iter().enumerate().take(15).map(|(i, data)| {
+        let color = match i % 2 {
+            0 => tailwind::SLATE.c950,
+            _ => tailwind::SLATE.c900,
+        };
+
+        Row::new(vec![
+            Cell::from(Text::from(format!("{}", i + 1)))
+                .style(Style::new().fg(tailwind::SLATE.c600).bg(color)),
+            Cell::from(Text::from(format!("{}", data.name)))
+                .style(Style::new().fg(tailwind::SLATE.c200).bg(color)),
+            Cell::from(Text::from(format!("{}", data.tries)))
+                .style(Style::new().fg(tailwind::SLATE.c200).bg(color)),
+            Cell::from(Text::from(format!("{}ms", data.completed_for_msec)))
+                .style(Style::new().fg(tailwind::SLATE.c600).bg(color)),
+        ])
+    });
+
+    let bar = " █ ";
+    let longest_score_item_len = constraint_len_calculator(&scores);
+
+    let table = Table::new(rows,
+                           [
+            // Constraint::Length(longest_score_item_len.0 + 1),
+            Constraint::Length(2),
+            Constraint::Min(longest_score_item_len.0 + 1),
+            Constraint::Min(longest_score_item_len.1 + 1),
+            Constraint::Min(longest_score_item_len.2),
+        ],
+    )
+        .header(header)
+        .highlight_symbol(Text::from(vec![
+            "".into(),
+            bar.into(),
+            bar.into(),
+            "".into(),
+        ]))
+        .bg(tailwind::SLATE.c950)
+        .highlight_spacing(HighlightSpacing::Always);
+    f.render_widget(table, area);
+}
+
+fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16) {
+    let name_len = score
+        .iter()
+        .map(|x| x.name.as_str().len())
+        .max()
+        .unwrap_or(0);
+
+    let tries_len = score
+        .iter()
+        .map(|q| { q.tries.to_string().len()})
+        .max()
+        .unwrap_or(0);
+
+    let completed_for_msec_len = score
+        .iter()
+        .map(|q| { q.completed_for_msec.to_string().len()})
+        .max()
+        .unwrap_or(0);
+
+    #[allow(clippy::cast_possible_truncation)]
+    (name_len as u16, tries_len as u16, completed_for_msec_len as u16)
 }
