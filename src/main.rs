@@ -1,15 +1,128 @@
 mod scores;
+mod ui;
+mod app;
 
-use std::cmp::{Ordering};
-use std::io;
+use std::{io::{Result, stdin}, cmp::Ordering, io};
 use rand::Rng;
 use chrono::prelude::*;
+use crossterm::{event::{self, KeyCode, KeyEventKind}, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, ExecutableCommand, execute};
+use crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event};
+use ratatui::{
+    backend::CrosstermBackend,
+    Terminal,
+};
+use ratatui::backend::Backend;
+use crate::app::{App, CurrentScreen};
+
 use crate::scores::{load_scores, save_scores, Score};
+use crate::ui::ui;
 
 const NUM_MINIMUM: i32 = 1;
 const NUM_MAXIMUM: i32 = 100;
 
-fn main() {
+fn main() -> Result<()> {
+    enable_raw_mode()?;
+
+    let mut stderr = io::stderr();
+    execute!(stderr, EnterAlternateScreen, EnableMouseCapture)?;
+
+    let backend = CrosstermBackend::new(stderr);
+    let mut terminal = Terminal::new(backend)?;
+    let mut app = App::new();
+    app.start_game();
+
+    let res = run_app(&mut terminal, &mut app);
+
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture,
+    )?;
+
+    terminal.show_cursor()?;
+
+    if let Ok(_) = res {
+    } else if let Err(err) = res {
+        println!("{err:?}");
+    }
+
+    Ok(())
+}
+
+fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    app: &mut App,
+) -> Result<bool> {
+    loop {
+        terminal.draw(|f| ui(f, app))?;
+
+        if let Event::Key(key) = event::read()? {
+            if key.kind == KeyEventKind::Release {
+                continue;
+            }
+
+            match app.current_screen {
+                CurrentScreen::Game => match key.code {
+                    KeyCode::Char('q') => {
+                        app.current_screen = CurrentScreen::Quit;
+                    }
+
+                    _ => {}
+                },
+                CurrentScreen::Leaderboard => match key.code {
+                    KeyCode::Char('q') => {
+                        app.current_screen = CurrentScreen::Menu;
+                    }
+                    _ => {},
+                }
+                CurrentScreen::Menu => match key.code {
+                    KeyCode::Up => {
+                        if app.get_selected_menu_idx() > 0 {
+                            let index = app.get_selected_menu_idx();
+                            app.main_menu_item_selected.select(Some(index - 1));
+                        }
+                    },
+                    KeyCode::Down => {
+                        if app.get_selected_menu_idx() < app.main_menu_items.len() - 1 {
+                            let index = app.get_selected_menu_idx();
+                            app.main_menu_item_selected.select(Some(index + 1));
+                        }
+                    },
+                    KeyCode::Enter => {
+                        let index = app.get_selected_menu_idx();
+
+                        match index {
+                            0 => {
+                                app.current_screen = CurrentScreen::Game;
+                            },
+                            1 => {
+                                app.current_screen = CurrentScreen::Leaderboard;
+                            },
+                            _ => return Ok(false),
+                        }
+                    }
+                    _ => {},
+                },
+                CurrentScreen::Quit => match key.code {
+                    KeyCode::Char('y') | KeyCode::Char('q') => {
+                        app.current_screen = CurrentScreen::Menu;
+                        // return Ok(true);
+                    }
+                    KeyCode::Char('n') => {
+                        // return Ok(false);
+                        app.current_screen = CurrentScreen::Game;
+                        continue;
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+    }
+}
+
+fn main2() {
     print!("\x1B[2J\x1B[1;1H"); // clear the console :)
 
     let mut scores = load_scores();
@@ -30,7 +143,7 @@ fn main() {
 
         let mut user_input = String::new();
 
-        io::stdin()
+        stdin()
             .read_line(&mut user_input)
             .expect("Can't get your number");
 
@@ -85,7 +198,7 @@ fn ask_for_name() -> String {
 
     let mut name = String::new();
 
-    io::stdin()
+    stdin()
         .read_line(&mut name)
         .expect("waiting for your name");
 
