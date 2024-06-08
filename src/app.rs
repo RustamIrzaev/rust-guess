@@ -32,7 +32,6 @@ pub struct GameInfo {
 }
 
 pub enum UserInputMode {
-    ReadOnly,
     InputNumber,
     InputName,
 }
