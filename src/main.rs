@@ -3,19 +3,19 @@ mod ui;
 mod app;
 
 use std::{
-    io::{Result, stdin}, 
+    io::{Result, stdin},
     cmp::Ordering, io
 };
 use rand::Rng;
 use chrono::prelude::*;
 use crossterm::{
-    event::{self, KeyCode, KeyEventKind, DisableMouseCapture, EnableMouseCapture, Event}, 
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, ExecutableCommand, execute};
+    event::{self, KeyCode, KeyEventKind, DisableMouseCapture, EnableMouseCapture, Event},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, execute};
 use ratatui::{
     backend::{CrosstermBackend, Backend},
     Terminal,
 };
-use crate::app::{App, CurrentScreen};
+use crate::app::{App, CurrentScreen, UserInputMode};
 use crate::scores::{load_scores, save_scores, Score};
 use crate::ui::ui;
 
@@ -67,19 +67,53 @@ fn run_app<B: Backend>(
             match app.current_screen {
                 CurrentScreen::Game => match key.code {
                     KeyCode::Char('q') => {
-                        if !app.quit_confirm_popup {
-                            app.quit_confirm_popup = !app.quit_confirm_popup;
+                        match app.mode {
+                            UserInputMode::InputName => continue,
+                            _ => {
+                                if !app.quit_confirm_popup {
+                                    app.quit_confirm_popup = !app.quit_confirm_popup;
+                                }
+                            },
                         }
-                        // app.current_screen = CurrentScreen::Quit;
                     },
                     KeyCode::Char('y') => {
                         if app.quit_confirm_popup {
-                            app.current_screen = CurrentScreen::Menu
+                            app.current_screen = CurrentScreen::Menu;
+                            app.quit_confirm_popup = false;
                         }
                     },
                     KeyCode::Char('n') => {
                         if app.quit_confirm_popup {
                             app.quit_confirm_popup = false;
+                        }
+                    },
+                    KeyCode::Char(value) => {
+                        match app.mode {
+                            UserInputMode::InputNumber => {
+                                if value.is_numeric() {
+                                    app.input_enter_char(value);
+                                }
+                            },
+                            _ => {},
+                        }
+                    },
+                    KeyCode::Backspace => {
+                        match app.mode {
+                            UserInputMode::InputNumber => {
+                                app.input_delete_char();
+                            },
+                            _ => {},
+                        }
+                    },
+                    KeyCode::Enter => {
+                        match app.mode {
+                            UserInputMode::InputNumber => {
+                                app.input_submit_number();
+                            },
+                            UserInputMode::InputName => {
+                                app.input_submit_name();
+                            },
+                            _ => {},
                         }
                     },
 
@@ -118,18 +152,6 @@ fn run_app<B: Backend>(
                         }
                     }
                     _ => {},
-                },
-                CurrentScreen::Quit => match key.code {
-                    KeyCode::Char('y') | KeyCode::Char('q') => {
-                        app.current_screen = CurrentScreen::Menu;
-                        // return Ok(true);
-                    }
-                    KeyCode::Char('n') => {
-                        // return Ok(false);
-                        app.current_screen = CurrentScreen::Game;
-                        continue;
-                    }
-                    _ => {}
                 },
             }
         }

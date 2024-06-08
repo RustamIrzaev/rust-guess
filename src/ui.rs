@@ -65,13 +65,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
             let scores = load_scores();
 
-            render_leaderboard_table(f, app, rects[1], &scores);
+            render_leaderboard_table(f, rects[1], &scores);
 
             f.render_widget(create_footer_left_part(&app), footer_rects[0]);
             f.render_widget(create_footer_navigation("(q) to back to menu"), footer_rects[1]);
-        },
-        CurrentScreen::Quit => {
-            f.render_widget(create_header("End the game? (y/n)"), rects[0]);
         },
         CurrentScreen::Game => {
             f.render_widget(create_header("Guess the number!"), rects[0]);
@@ -99,17 +96,15 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
             if app.quit_confirm_popup {
                 let block = Block::bordered()
-                    .title_top(Line::from("Confirmation").centered())
+                    .title_top(Line::from("Confirmation").centered().on_light_red().white())
                     .light_red();
-                
-                //Quit the game (y/n)?
-                let area = centered_rect(60, 20, f.size());
 
+                let area = centered_rect(60, 16, f.size());
                 let text_area = block.inner(area);
                 let content = Paragraph::new("Quit the game (y/n)?")
                     .centered()
                     .white();
-                
+
                 f.render_widget(Clear, area);
                 f.render_widget(block, area);
                 f.render_widget(content, text_area);
@@ -172,7 +167,7 @@ fn create_footer_navigation<'a>(text: &str) -> Paragraph<'a> {
     return footer_hotkeys;
 }
 
-fn render_leaderboard_table(f: &mut Frame, app: &mut App, area: Rect, scores: &Vec<Score>) {
+fn render_leaderboard_table(f: &mut Frame, area: Rect, scores: &Vec<Score>) {
     let header_style = Style::default()
         .fg(tailwind::SLATE.c200)
         .bg(tailwind::BLUE.c900);
