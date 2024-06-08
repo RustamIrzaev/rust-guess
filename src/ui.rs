@@ -196,7 +196,7 @@ fn render_leaderboard_table(f: &mut Frame, area: Rect, scores: &Vec<Score>) {
         .fg(tailwind::SLATE.c200)
         .bg(tailwind::BLUE.c900);
 
-    let header = ["#", "Name", "Guess tries", "Game completion time"]
+    let header = ["#", "Name", "Tries", "Game range", "Game time"]
         .into_iter()
         .map(Cell::from)
         .collect::<Row>()
@@ -217,7 +217,11 @@ fn render_leaderboard_table(f: &mut Frame, area: Rect, scores: &Vec<Score>) {
             Cell::from(Text::from(format!("{}", data.tries))
                 .centered())
                 .style(Style::new().fg(tailwind::GREEN.c300).bg(color)),
-            Cell::from(Text::from(format!("{}ms", data.completed_for_ms)))
+            Cell::from(Text::from(format!("{}", data.number_range))
+                .centered())
+                .style(Style::new().fg(tailwind::SLATE.c200).bg(color)),
+            Cell::from(Text::from(format!("{}ms", data.completed_for_ms))
+                .centered())
                 .style(Style::new().fg(tailwind::SLATE.c600).bg(color)),
         ])
     });
@@ -231,7 +235,8 @@ fn render_leaderboard_table(f: &mut Frame, area: Rect, scores: &Vec<Score>) {
             Constraint::Length(2),
             Constraint::Min(longest_score_item_len.0 + 1),
             Constraint::Min(longest_score_item_len.1 + 1),
-            Constraint::Min(longest_score_item_len.2),
+            Constraint::Min(longest_score_item_len.1 + 2),
+            Constraint::Min(longest_score_item_len.3),
         ],
     )
         .header(header)
@@ -246,7 +251,7 @@ fn render_leaderboard_table(f: &mut Frame, area: Rect, scores: &Vec<Score>) {
     f.render_widget(table, area);
 }
 
-fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16) {
+fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16, u16) {
     let name_len = score
         .iter()
         .map(|x| x.name.as_str().len())
@@ -259,6 +264,12 @@ fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16) {
         .max()
         .unwrap_or(0);
 
+    let number_range_len = score
+        .iter()
+        .map(|q| { q.number_range.as_str().len()})
+        .max()
+        .unwrap_or(0);
+
     let completed_for_msec_len = score
         .iter()
         .map(|q| { q.completed_for_ms.to_string().len()})
@@ -266,7 +277,7 @@ fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16) {
         .unwrap_or(0);
 
     #[allow(clippy::cast_possible_truncation)]
-    (name_len as u16, tries_len as u16, completed_for_msec_len as u16)
+    (name_len as u16, tries_len as u16, number_range_len as u16, completed_for_msec_len as u16)
 }
 
 fn centered_rect(x_percent: u16, y_percent: u16, rect: Rect) -> Rect {

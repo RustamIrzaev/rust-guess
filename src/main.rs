@@ -90,7 +90,6 @@ fn run_app<B: Backend>(
                                     app.input_enter_char(value);
                                 }
                             },
-                            _ => {},
                         }
                     },
                     KeyCode::Backspace => {
@@ -109,7 +108,6 @@ fn run_app<B: Backend>(
                             UserInputMode::InputName => {
                                 app.input_submit_name();
                             },
-                            _ => {},
                         }
                     },
 
