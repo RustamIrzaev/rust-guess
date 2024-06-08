@@ -1,6 +1,6 @@
 use ratatui:: {
     layout::{Layout, Constraint, Rect},
-    widgets::{Block, Borders, Paragraph, BorderType,
+    widgets::{Block, Borders, Paragraph, BorderType, Clear,
               List, ListItem, Cell, Row, Table, HighlightSpacing},
     style::{Style, Color, Modifier, Stylize,
             palette::{tailwind}},
@@ -96,6 +96,24 @@ pub fn ui(f: &mut Frame, app: &mut App) {
 
             f.render_widget(create_footer_left_part(&app), footer_rects[0]);
             f.render_widget(create_footer_navigation("(q) to end game"), footer_rects[1]);
+
+            if app.quit_confirm_popup {
+                let block = Block::bordered()
+                    .title_top(Line::from("Confirmation").centered())
+                    .light_red();
+                
+                //Quit the game (y/n)?
+                let area = centered_rect(60, 20, f.size());
+
+                let text_area = block.inner(area);
+                let content = Paragraph::new("Quit the game (y/n)?")
+                    .centered()
+                    .white();
+                
+                f.render_widget(Clear, area);
+                f.render_widget(block, area);
+                f.render_widget(content, text_area);
+            }
         }
     }
 }
@@ -153,8 +171,6 @@ fn create_footer_navigation<'a>(text: &str) -> Paragraph<'a> {
 
     return footer_hotkeys;
 }
-
-
 
 fn render_leaderboard_table(f: &mut Frame, app: &mut App, area: Rect, scores: &Vec<Score>) {
     let header_style = Style::default()
@@ -232,4 +248,20 @@ fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16) {
 
     #[allow(clippy::cast_possible_truncation)]
     (name_len as u16, tries_len as u16, completed_for_msec_len as u16)
+}
+
+fn centered_rect(x_percent: u16, y_percent: u16, rect: Rect) -> Rect {
+    let layout = Layout::vertical([
+        Constraint::Percentage((100 - y_percent) / 2),
+        Constraint::Percentage(y_percent),
+        Constraint::Percentage((100 - y_percent) / 2),
+    ])
+    .split(rect);
+
+    Layout::horizontal([
+        Constraint::Percentage((100 - x_percent) / 2),
+        Constraint::Percentage(x_percent),
+        Constraint::Percentage((100 - x_percent) / 2),
+    ])
+    .split(layout[1])[1]
 }

@@ -30,12 +30,14 @@ pub struct App {
     pub main_menu_items: Vec<String>,
     pub game_info: GameInfo,
     pub user_input_history: Vec::<GameMove>,
+    pub quit_confirm_popup: bool,
 }
 
 impl App {
     pub fn new() -> App {
         App {
             current_screen: CurrentScreen::Menu,
+            quit_confirm_popup: false,
             user_input_history: Vec::<GameMove>::new(),
             game_info: GameInfo {
                 min_number: NUM_MINIMUM,

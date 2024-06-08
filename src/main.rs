@@ -2,18 +2,20 @@ mod scores;
 mod ui;
 mod app;
 
-use std::{io::{Result, stdin}, cmp::Ordering, io};
+use std::{
+    io::{Result, stdin}, 
+    cmp::Ordering, io
+};
 use rand::Rng;
 use chrono::prelude::*;
-use crossterm::{event::{self, KeyCode, KeyEventKind}, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, ExecutableCommand, execute};
-use crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event};
+use crossterm::{
+    event::{self, KeyCode, KeyEventKind, DisableMouseCapture, EnableMouseCapture, Event}, 
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}, ExecutableCommand, execute};
 use ratatui::{
-    backend::CrosstermBackend,
+    backend::{CrosstermBackend, Backend},
     Terminal,
 };
-use ratatui::backend::Backend;
 use crate::app::{App, CurrentScreen};
-
 use crate::scores::{load_scores, save_scores, Score};
 use crate::ui::ui;
 
@@ -65,8 +67,21 @@ fn run_app<B: Backend>(
             match app.current_screen {
                 CurrentScreen::Game => match key.code {
                     KeyCode::Char('q') => {
-                        app.current_screen = CurrentScreen::Quit;
-                    }
+                        if !app.quit_confirm_popup {
+                            app.quit_confirm_popup = !app.quit_confirm_popup;
+                        }
+                        // app.current_screen = CurrentScreen::Quit;
+                    },
+                    KeyCode::Char('y') => {
+                        if app.quit_confirm_popup {
+                            app.current_screen = CurrentScreen::Menu
+                        }
+                    },
+                    KeyCode::Char('n') => {
+                        if app.quit_confirm_popup {
+                            app.quit_confirm_popup = false;
+                        }
+                    },
 
                     _ => {}
                 },
@@ -116,7 +131,6 @@ fn run_app<B: Backend>(
                     }
                     _ => {}
                 },
-                _ => {}
             }
         }
     }
