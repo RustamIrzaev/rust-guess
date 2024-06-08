@@ -1,4 +1,3 @@
-use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{BufReader, Write};
 use chrono::{DateTime, Local};
@@ -7,17 +6,13 @@ use serde::{Deserialize, Serialize};
 const LEADERBOARD_FILE_NAME: &'static str = "data.rom";
 
 #[derive(Serialize, Deserialize)]
-pub(crate) struct Score {
-    pub(crate) name: String,
-    pub(crate) tries: i32,
-    pub(crate) completed_at: DateTime<Local>,
-    pub(crate) completed_for_msec: i64,
-}
-
-impl Display for Score {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Name {}\ttries:{}\tcompleted_in:{}ms", self.name, self.tries, self.completed_for_msec)
-    }
+pub struct Score {
+    pub name: String,
+    pub tries: i32,
+    pub started_at: DateTime<Local>,
+    pub completed_at: DateTime<Local>,
+    pub completed_for_ms: i64,
+    pub number_range: String,
 }
 
 pub fn load_scores() -> Vec<Score> {
@@ -41,4 +36,23 @@ pub fn save_scores(scores: &Vec<Score>) {
         Ok(_) => {},
         Err(_) => println!("Save to file failed"),
     }
+}
+
+pub fn add_score(name: String, tries: i32, number_range: String,
+                 started_at: DateTime<Local>, completed_at: DateTime<Local>,
+                 completed_for_ms: i64) {
+    let mut scores = load_scores();
+
+    let new_entry = Score {
+        name,
+        tries,
+        started_at,
+        completed_at,
+        completed_for_ms,
+        number_range,
+    };
+
+    scores.push(new_entry);
+    scores.sort_by_key(|entry| entry.tries);
+    save_scores(&scores);
 }

@@ -7,7 +7,7 @@ use ratatui:: {
     text::{Text, Span, Line},
     Frame,
 };
-use crate::app::{App, CurrentScreen};
+use crate::app::{App, CurrentScreen, NUM_MAXIMUM, NUM_MINIMUM};
 use crate::scores::{load_scores, Score};
 
 const INFO_TEXT: &str = "(↑) move up | (↓) move down | (Enter) select";
@@ -15,6 +15,7 @@ const INFO_TEXT: &str = "(↑) move up | (↓) move down | (Enter) select";
 pub fn ui(f: &mut Frame, app: &mut App) {
     let rects = Layout::vertical([
         Constraint::Length(3),
+        Constraint::Max(1),
         Constraint::Min(1),
         Constraint::Length(3),
     ]).split(f.size());
@@ -31,6 +32,10 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                     )
             }, rects[0]);
 
+            f.render_widget({
+                Paragraph::new(Line::from("Select an option").dark_gray())
+            }, rects[1]);
+
             let mut menu_items = Vec::<ListItem>::new();
 
             for item in app.main_menu_items.iter() {
@@ -42,7 +47,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                      .block(Block::default().borders(Borders::ALL))
                      .highlight_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
                      .highlight_symbol(">> ")
-            }, rects[1], &mut app.main_menu_item_selected);
+            }, rects[2], &mut app.main_menu_item_selected);
 
             f.render_widget({
                 Paragraph::new(Line::from(INFO_TEXT))
@@ -53,7 +58,7 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                             .border_type(BorderType::Thick)
                             .border_style(Style::new().fg(Color::DarkGray)),
                     )
-            }, rects[2]);
+            }, rects[3]);
         },
         CurrentScreen::Leaderboard => {
             f.render_widget(create_header("Leaderboard"), rects[0]);
@@ -61,17 +66,36 @@ pub fn ui(f: &mut Frame, app: &mut App) {
             let footer_rects = Layout::horizontal([
                 Constraint::Percentage(50),
                 Constraint::Percentage(50),
-            ]).split(rects[2]);
+            ]).split(rects[3]);
 
             let scores = load_scores();
 
-            render_leaderboard_table(f, rects[1], &scores);
+            render_leaderboard_table(f, rects[2], &scores);
 
             f.render_widget(create_footer_left_part(&app), footer_rects[0]);
             f.render_widget(create_footer_navigation("(q) to back to menu"), footer_rects[1]);
         },
         CurrentScreen::Game => {
-            f.render_widget(create_header("Guess the number!"), rects[0]);
+            let default_header = format!("Guess the number {}-{}!", NUM_MINIMUM, NUM_MAXIMUM);
+
+            f.render_widget(create_header(match app.game_info.current_guess_response.len() {
+                0 => default_header.as_str(),
+                _ => app.game_info.current_guess_response.as_str(),
+            }), rects[0]);
+
+            let guess_choice = format!("Enter your guess: {}", app.user_input_info.input);
+            let name_choice = format!("Enter your name: {}", app.user_input_info.input);
+
+            f.render_widget({
+                let text = match app.game_info.is_game_over {
+                    true => name_choice.as_str(),
+                    false => guess_choice.as_str(),
+                };
+
+                Span::from(text)
+                    .add_modifier(Modifier::BOLD)
+                    .fg(Color::LightGreen)
+            }, rects[1]);
 
             f.render_widget({
                 let mut list_items = Vec::<ListItem>::new();
@@ -79,17 +103,17 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                 for item in app.user_input_history.iter() {
                     list_items.push(ListItem::new(Line::from(Span::styled(
                         format!("{}", item.user_value),
-                        Style::default().fg(Color::Gray),
+                        Style::default().fg(Color::DarkGray),
                     ))));
                 }
 
                 List::new(list_items)
-            }, rects[1]);
+            }, rects[2]);
 
             let footer_rects = Layout::horizontal([
                 Constraint::Percentage(50),
                 Constraint::Percentage(50),
-            ]).split(rects[2]);
+            ]).split(rects[3]);
 
             f.render_widget(create_footer_left_part(&app), footer_rects[0]);
             f.render_widget(create_footer_navigation("(q) to end game"), footer_rects[1]);
@@ -193,7 +217,7 @@ fn render_leaderboard_table(f: &mut Frame, area: Rect, scores: &Vec<Score>) {
             Cell::from(Text::from(format!("{}", data.tries))
                 .centered())
                 .style(Style::new().fg(tailwind::GREEN.c300).bg(color)),
-            Cell::from(Text::from(format!("{}ms", data.completed_for_msec)))
+            Cell::from(Text::from(format!("{}ms", data.completed_for_ms)))
                 .style(Style::new().fg(tailwind::SLATE.c600).bg(color)),
         ])
     });
@@ -237,7 +261,7 @@ fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16) {
 
     let completed_for_msec_len = score
         .iter()
-        .map(|q| { q.completed_for_msec.to_string().len()})
+        .map(|q| { q.completed_for_ms.to_string().len()})
         .max()
         .unwrap_or(0);
 
