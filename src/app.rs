@@ -5,9 +5,6 @@ use ratatui::widgets::ListState;
 use serde::{Deserialize, Serialize};
 use crate::scores::add_score;
 
-pub const NUM_MINIMUM: i32 = 1;
-pub const NUM_MAXIMUM: i32 = 100;
-
 pub enum CurrentScreen {
     Game,
     Menu,
@@ -29,6 +26,7 @@ pub struct GameInfo {
     pub is_game_over: bool,
     pub game_started_at: DateTime<Local>,
     pub game_completed_at: DateTime<Local>,
+    pub is_hard_mode: bool,
 }
 
 pub enum UserInputMode {
@@ -46,7 +44,7 @@ pub struct App {
     pub main_menu_item_selected: ListState,
     pub main_menu_items: Vec<String>,
     pub game_info: GameInfo,
-    pub user_input_history: Vec::<GameMove>,
+    pub user_input_history: Vec<GameMove>,
     pub quit_confirm_popup: bool,
     pub user_input_info: UserInputInfo,
     pub user_name: String,
@@ -61,17 +59,22 @@ impl App {
             user_input_history: Vec::<GameMove>::new(),
             user_name: String::new(),
             game_info: GameInfo {
-                min_number: NUM_MINIMUM,
-                max_number: NUM_MAXIMUM,
+                min_number: 0,
+                max_number: 0,
                 generated_number: 0,
                 current_guess_response: String::new(),
                 is_game_over: false,
                 game_started_at: Local::now(),
                 game_completed_at: Local::now(),
+                is_hard_mode: false,
             },
             main_menu_item_selected: ListState::default().with_selected(Some(0)),
             main_menu_items: vec![
-                "Start game".to_string(),
+                "Start game (1-100)".to_string(),
+                "Start game (1-100) Hard Mode".to_string(),
+                "Start game (1-1000)".to_string(),
+                "Start game (1-1000) Hard Mode".to_string(),
+                "Start game (1-1000000) Hard Mode".to_string(),
                 "Leaderboard".to_string(),
                 "Quit".to_string(),
             ],
@@ -87,9 +90,9 @@ impl App {
         self.main_menu_item_selected.selected().unwrap_or(0)
     }
 
-    pub fn start_game(&mut self) {
+    pub fn start_game(&mut self, min_number: i32, max_number: i32, is_hard_mode: bool) {
         self.game_info.generated_number = rand::thread_rng()
-            .gen_range(NUM_MINIMUM..=NUM_MAXIMUM);
+            .gen_range(min_number..=max_number);
 
         self.user_input_info.input.clear();
         self.input_reset_cursor();
@@ -99,8 +102,10 @@ impl App {
         self.game_info.game_started_at = Local::now();
         self.game_info.is_game_over = false;
         self.game_info.current_guess_response = String::new();
-        self.game_info.min_number = NUM_MINIMUM;
-        self.game_info.max_number = NUM_MAXIMUM;
+        self.game_info.min_number = min_number;
+        self.game_info.max_number = max_number;
+        self.game_info.is_hard_mode = is_hard_mode;
+        self.mode = UserInputMode::InputNumber;
     }
 
     fn input_move_cursor_left(&mut self) {
@@ -173,11 +178,9 @@ impl App {
         match value.cmp(&self.game_info.generated_number) {
             Ordering::Less => {
                 self.game_info.current_guess_response = format!("Number is > than {value}");
-                self.game_info.min_number = value;
             },
             Ordering::Greater => {
                 self.game_info.current_guess_response = format!("Number is < than {value}");
-                self.game_info.max_number = value;
             },
             Ordering::Equal => {
                 self.game_info.current_guess_response = "YOU WON !!!".to_owned();
@@ -204,15 +207,16 @@ impl App {
 
     fn remap_scores_and_save(&self) {
         let tries = self.user_input_history.len() as i32;
-        let number_range = format!("{}-{}", NUM_MINIMUM, NUM_MAXIMUM);
+        let number_range = format!("{}-{}", self.game_info.min_number, self.game_info.max_number);
         let time_diff = self.game_info.game_completed_at.time() - self.game_info.game_started_at.time();
-        let msec_diff = time_diff.num_milliseconds();
+        let ms_diff = time_diff.num_milliseconds();
 
         add_score(self.user_name.clone(),
           tries, number_range,
           self.game_info.game_started_at,
           self.game_info.game_completed_at,
-          msec_diff
+          ms_diff,
+          self.game_info.is_hard_mode
         );
     }
 }

@@ -1,14 +1,24 @@
-use ratatui:: {
-    layout::{Layout, Constraint, Rect},
-    widgets::{Block, Borders, Paragraph, BorderType, Clear,
-              List, ListItem, Cell, Row, Table, HighlightSpacing},
-    style::{Style, Color, Modifier, Stylize,
-            palette::{tailwind}},
-    text::{Text, Span, Line},
+use ratatui::{
     Frame,
+    layout::{Constraint, Layout},
+    style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, BorderType, Clear, List, ListItem, Paragraph},
 };
-use crate::app::{App, CurrentScreen, NUM_MAXIMUM, NUM_MINIMUM};
-use crate::scores::{load_scores, Score};
+
+use crate::app::{App, CurrentScreen};
+use crate::scores::load_scores;
+use crate::ui::{
+    ui_footer::{create_footer_left_part, create_footer_navigation},
+    ui_header::create_header,
+    ui_leaderboard::render_leaderboard_table,
+    ui_helpers::centered_rect,
+};
+
+mod ui_footer;
+mod ui_header;
+mod ui_leaderboard;
+mod ui_helpers;
 
 const INFO_TEXT: &str = "(↑) move up | (↓) move down | (Enter) select";
 
@@ -76,7 +86,8 @@ pub fn ui(f: &mut Frame, app: &mut App) {
             f.render_widget(create_footer_navigation("(q) to back to menu"), footer_rects[1]);
         },
         CurrentScreen::Game => {
-            let default_header = format!("Guess the number {}-{}!", NUM_MINIMUM, NUM_MAXIMUM);
+            let default_header = format!("Guess the number {}-{}{}!", app.game_info.min_number, app.game_info.max_number,
+                 if app.game_info.is_hard_mode { " [H]" } else { "" });
 
             f.render_widget(create_header(match app.game_info.current_guess_response.len() {
                 0 => default_header.as_str(),
@@ -97,18 +108,20 @@ pub fn ui(f: &mut Frame, app: &mut App) {
                     .fg(Color::LightGreen)
             }, rects[1]);
 
-            f.render_widget({
-                let mut list_items = Vec::<ListItem>::new();
+            if !app.game_info.is_hard_mode {
+                f.render_widget({
+                    let mut list_items = Vec::<ListItem>::new();
 
-                for item in app.user_input_history.iter() {
-                    list_items.push(ListItem::new(Line::from(Span::styled(
-                        format!("{}", item.user_value),
-                        Style::default().fg(Color::DarkGray),
-                    ))));
-                }
+                    for item in app.user_input_history.iter() {
+                        list_items.push(ListItem::new(Line::from(Span::styled(
+                            format!("{}", item.user_value),
+                            Style::default().fg(Color::DarkGray),
+                        ))));
+                    }
 
-                List::new(list_items)
-            }, rects[2]);
+                    List::new(list_items)
+                }, rects[2]);
+            }
 
             let footer_rects = Layout::horizontal([
                 Constraint::Percentage(50),
@@ -135,163 +148,4 @@ pub fn ui(f: &mut Frame, app: &mut App) {
             }
         }
     }
-}
-
-fn create_header<'a>(title_text: &str) -> Paragraph<'a> {
-    let title = Paragraph::new(Text::from(title_text.to_owned()).green())
-        .block(Block::default().borders(Borders::ALL))
-        .centered();
-
-    return title;
-}
-
-fn create_footer_left_part<'a>(app: &App) -> Paragraph<'a> {
-    let footer_text_data = match app.current_screen {
-        CurrentScreen::Game => {
-            let guesses_made: i32 = app.user_input_history.len() as i32;
-            let guess_color = match guesses_made {
-                0..=3 => Color::LightGreen,
-                4..=7 => Color::Yellow,
-                8..=11 => Color::LightRed,
-                _ => Color::Red,
-            };
-            let span_style = Style::default().fg(guess_color);
-
-            vec![
-                Span::styled("guesses made", span_style),
-                Span::styled(" : ", span_style),
-                Span::styled(guesses_made.to_string(), span_style),
-            ]},
-        CurrentScreen::Leaderboard => {
-            vec![Span::from("Top 15 shown").light_green()]
-        },
-        _ => {vec![]}
-    };
-
-    let footer_text = if footer_text_data.len() > 0 {
-        Paragraph::new(
-            Line::from(footer_text_data))
-            .block(Block::default().borders(Borders::ALL))
-            .centered()
-    } else {
-        Paragraph::new(Line::from(""))
-    };
-
-    return footer_text;
-}
-
-fn create_footer_navigation<'a>(text: &str) -> Paragraph<'a> {
-    let footer_hotkeys_data = Span::styled(text.to_owned(),
-       Style::default().fg(Color::LightRed)).into_centered_line();
-
-    let footer_hotkeys = Paragraph::new(
-        Line::from(footer_hotkeys_data))
-        .block(Block::default().borders(Borders::ALL));
-
-    return footer_hotkeys;
-}
-
-fn render_leaderboard_table(f: &mut Frame, area: Rect, scores: &Vec<Score>) {
-    let header_style = Style::default()
-        .fg(tailwind::SLATE.c200)
-        .bg(tailwind::BLUE.c900);
-
-    let header = ["#", "Name", "Tries", "Game range", "Game time"]
-        .into_iter()
-        .map(Cell::from)
-        .collect::<Row>()
-        .style(header_style)
-        .height(1);
-
-    let rows = scores.iter().enumerate().take(15).map(|(i, data)| {
-        let color = match i % 2 {
-            0 => tailwind::SLATE.c950,
-            _ => tailwind::SLATE.c900,
-        };
-
-        Row::new(vec![
-            Cell::from(Text::from(format!("{}", i + 1)))
-                .style(Style::new().fg(tailwind::SLATE.c600).bg(color)),
-            Cell::from(Text::from(format!("{}", data.name)))
-                .style(Style::new().fg(tailwind::SLATE.c200).bg(color)),
-            Cell::from(Text::from(format!("{}", data.tries))
-                .centered())
-                .style(Style::new().fg(tailwind::GREEN.c300).bg(color)),
-            Cell::from(Text::from(format!("{}", data.number_range))
-                .centered())
-                .style(Style::new().fg(tailwind::SLATE.c200).bg(color)),
-            Cell::from(Text::from(format!("{}ms", data.completed_for_ms))
-                .centered())
-                .style(Style::new().fg(tailwind::SLATE.c600).bg(color)),
-        ])
-    });
-
-    let bar = " █ ";
-    let longest_score_item_len = constraint_len_calculator(&scores);
-
-    let table = Table::new(rows,
-                           [
-            // Constraint::Length(longest_score_item_len.0 + 1),
-            Constraint::Length(2),
-            Constraint::Min(longest_score_item_len.0 + 1),
-            Constraint::Min(longest_score_item_len.1 + 1),
-            Constraint::Min(longest_score_item_len.1 + 2),
-            Constraint::Min(longest_score_item_len.3),
-        ],
-    )
-        .header(header)
-        .highlight_symbol(Text::from(vec![
-            "".into(),
-            bar.into(),
-            bar.into(),
-            "".into(),
-        ]))
-        .bg(tailwind::SLATE.c950)
-        .highlight_spacing(HighlightSpacing::Always);
-    f.render_widget(table, area);
-}
-
-fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16, u16) {
-    let name_len = score
-        .iter()
-        .map(|x| x.name.as_str().len())
-        .max()
-        .unwrap_or(0);
-
-    let tries_len = score
-        .iter()
-        .map(|q| { q.tries.to_string().len()})
-        .max()
-        .unwrap_or(0);
-
-    let number_range_len = score
-        .iter()
-        .map(|q| { q.number_range.as_str().len()})
-        .max()
-        .unwrap_or(0);
-
-    let completed_for_msec_len = score
-        .iter()
-        .map(|q| { q.completed_for_ms.to_string().len()})
-        .max()
-        .unwrap_or(0);
-
-    #[allow(clippy::cast_possible_truncation)]
-    (name_len as u16, tries_len as u16, number_range_len as u16, completed_for_msec_len as u16)
-}
-
-fn centered_rect(x_percent: u16, y_percent: u16, rect: Rect) -> Rect {
-    let layout = Layout::vertical([
-        Constraint::Percentage((100 - y_percent) / 2),
-        Constraint::Percentage(y_percent),
-        Constraint::Percentage((100 - y_percent) / 2),
-    ])
-    .split(rect);
-
-    Layout::horizontal([
-        Constraint::Percentage((100 - x_percent) / 2),
-        Constraint::Percentage(x_percent),
-        Constraint::Percentage((100 - x_percent) / 2),
-    ])
-    .split(layout[1])[1]
 }
