@@ -1,8 +1,9 @@
 mod app;
 mod scores;
 mod ui;
+mod models;
 
-use crate::app::{App, CurrentScreen, UserInputMode};
+use crate::app::{App};
 use crate::ui::ui;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
@@ -14,6 +15,7 @@ use ratatui::{
     Terminal,
 };
 use std::io::{self, Result};
+use crate::models::{CurrentScreen, UserInputMode};
 
 fn main() -> Result<()> {
     enable_raw_mode()?;

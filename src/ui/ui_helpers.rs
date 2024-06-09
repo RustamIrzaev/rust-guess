@@ -1,5 +1,5 @@
 use ratatui::layout::{Constraint, Layout, Rect};
-use crate::scores::Score;
+use crate::models::Score;
 
 pub fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16, u16, u16) {
     let name_len = score
@@ -19,12 +19,6 @@ pub fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16, u16, u16) {
         .map(|q| { q.number_range.as_str().len()})
         .max()
         .unwrap_or(0);
-
-    // let hard_mode_len = score
-    //     .iter()
-    //     .map(|q| { q.is_hard_mode})
-    //     .max()
-    //     .unwrap_or(0);
 
     let completed_for_msec_len = score
         .iter()

@@ -6,7 +6,8 @@ use ratatui::{
     widgets::{Block, Borders, BorderType, Clear, List, ListItem, Paragraph},
 };
 
-use crate::app::{App, CurrentScreen};
+use crate::app::{App};
+use crate::models::CurrentScreen;
 use crate::scores::load_scores;
 use crate::ui::{
     ui_footer::{create_footer_left_part, create_footer_navigation},

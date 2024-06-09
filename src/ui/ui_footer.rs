@@ -3,7 +3,8 @@ use ratatui::{
     style::{Style, Color, Stylize},
     text::{Span, Line},
 };
-use crate::app::{App, CurrentScreen};
+use crate::app::{App};
+use crate::models::CurrentScreen;
 
 pub fn create_footer_navigation<'a>(text: &str) -> Paragraph<'a> {
     let footer_hotkeys_data = Span::styled(text.to_owned(), 

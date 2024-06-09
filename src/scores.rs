@@ -1,20 +1,9 @@
 use std::fs::File;
 use std::io::{BufReader, Write};
 use chrono::{DateTime, Local};
-use serde::{Deserialize, Serialize};
+use crate::models::Score;
 
 const LEADERBOARD_FILE_NAME: &'static str = "scores.json";
-
-#[derive(Serialize, Deserialize)]
-pub struct Score {
-    pub name: String,
-    pub tries: i32,
-    pub started_at: DateTime<Local>,
-    pub completed_at: DateTime<Local>,
-    pub completed_for_ms: i64,
-    pub number_range: String,
-    pub is_hard_mode: bool,
-}
 
 pub fn load_scores() -> Vec<Score> {
     let file = match File::open(LEADERBOARD_FILE_NAME) {

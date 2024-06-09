@@ -5,7 +5,7 @@ use ratatui:: {
     text::{Text},
     Frame,
 };
-use crate::scores::Score;
+use crate::models::Score;
 use crate::ui::ui_helpers::constraint_len_calculator;
 
 pub fn render_leaderboard_table(f: &mut Frame, area: Rect, scores: &Vec<Score>) {
