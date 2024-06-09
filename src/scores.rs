@@ -3,7 +3,7 @@ use std::io::{BufReader, Write};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
-const LEADERBOARD_FILE_NAME: &'static str = "data.rom";
+const LEADERBOARD_FILE_NAME: &'static str = "scores.json";
 
 #[derive(Serialize, Deserialize)]
 pub struct Score {
@@ -13,6 +13,7 @@ pub struct Score {
     pub completed_at: DateTime<Local>,
     pub completed_for_ms: i64,
     pub number_range: String,
+    pub is_hard_mode: bool,
 }
 
 pub fn load_scores() -> Vec<Score> {
@@ -40,7 +41,7 @@ pub fn save_scores(scores: &Vec<Score>) {
 
 pub fn add_score(name: String, tries: i32, number_range: String,
                  started_at: DateTime<Local>, completed_at: DateTime<Local>,
-                 completed_for_ms: i64) {
+                 completed_for_ms: i64, is_hard_mode: bool) {
     let mut scores = load_scores();
 
     let new_entry = Score {
@@ -50,6 +51,7 @@ pub fn add_score(name: String, tries: i32, number_range: String,
         completed_at,
         completed_for_ms,
         number_range,
+        is_hard_mode
     };
 
     scores.push(new_entry);
