@@ -1,7 +1,12 @@
 [package]
-name = "rust-guess"
-version = "0.1.0"
+name = "rust-guess-game"
+version = "1.0.0"
 edition = "2021"
+authors = ["Rustam Irzaiev"]
+description = "Not that simple guessing game - it has terminal UI"
+repository = "https://github.com/RustamIrzaev/rust-guess"
+license = "MIT"
+rust-version = "1.74.0"
 
 [dependencies]
 rand = "0.8.5"
@@ -11,4 +16,3 @@ serde_json = "1.0.117"
 chrono = { version = "0.4.38", features = ["serde"] }
 crossterm = "0.27.0"
 ratatui = "0.26.3"
-#unicode-width = "0.1.12"
