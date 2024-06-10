@@ -4,6 +4,13 @@
 
 This project is a part of the Rust learning process that I am currently doing. So there are some imperfections and not the best practices used in the project.
 
+<p align='center' width="100%">
+  <img width="30%" alt="main_menu" src="https://github.com/RustamIrzaev/rust-guess/assets/352703/e663f28c-503d-4398-a402-18191b2ae139">
+  <img width="30%" alt="game" src="https://github.com/RustamIrzaev/rust-guess/assets/352703/81472abe-f85b-4b24-90c6-170d9c61fb96">
+  <img width="30%" alt="leaderboard" src="https://github.com/RustamIrzaev/rust-guess/assets/352703/438c3a0e-2543-4f7a-92b9-5441cf861cff">
+</p>
+
+
 ## What is inside?
 - 🔹 Terminal UI (TUI) (`📦 ratatui`)
 - 🔹 Leaderboard in json file (`📦 serde` and `📦 serde_json`)
