@@ -1,10 +1,3 @@
-mod app;
-mod scores;
-mod ui;
-mod models;
-
-use crate::app::{App};
-use crate::ui::ui;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEventKind},
     execute,
@@ -15,7 +8,16 @@ use ratatui::{
     Terminal,
 };
 use std::io::{self, Result};
-use crate::models::{CurrentScreen, UserInputMode};
+use crate::app::App;
+use crate::models::current_screen::CurrentScreen;
+use crate::models::user_input_mode::UserInputMode;
+use crate::ui_builder::ui_builder;
+
+mod app;
+mod models;
+mod ui_builder;
+mod scores;
+mod ui;
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
@@ -48,7 +50,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>) -> Result<bool> {
     let mut app = App::new();
 
     loop {
-        terminal.draw(|f| ui(f, &mut app))?;
+        terminal.draw(|f| ui_builder(f, &mut app))?;
 
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Release {

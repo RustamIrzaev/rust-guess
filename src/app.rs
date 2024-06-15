@@ -2,7 +2,11 @@ use std::cmp::{Ordering, Reverse};
 use chrono::{Local};
 use rand::Rng;
 use ratatui::widgets::ListState;
-use crate::models::{CurrentScreen, GameInfo, GameMove, UserInputInfo, UserInputMode};
+use crate::models::current_screen::CurrentScreen;
+use crate::models::game_info::GameInfo;
+use crate::models::game_move::GameMove;
+use crate::models::user_input_info::UserInputInfo;
+use crate::models::user_input_mode::UserInputMode;
 use crate::scores::add_score;
 
 pub struct App {

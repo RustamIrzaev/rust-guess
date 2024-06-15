@@ -7,23 +7,16 @@ use ratatui::{
 };
 
 use crate::app::{App};
-use crate::models::CurrentScreen;
+use crate::models::current_screen::CurrentScreen;
 use crate::scores::load_scores;
-use crate::ui::{
-    ui_footer::{create_footer_left_part, create_footer_navigation},
-    ui_header::create_header,
-    ui_leaderboard::render_leaderboard_table,
-    ui_helpers::centered_rect,
-};
-
-mod ui_footer;
-mod ui_header;
-mod ui_leaderboard;
-mod ui_helpers;
+use crate::ui::ui_footer::{create_footer_left_part, create_footer_navigation};
+use crate::ui::ui_header::create_header;
+use crate::ui::ui_helpers::centered_rect;
+use crate::ui::ui_leaderboard::render_leaderboard_table;
 
 const INFO_TEXT: &str = "(↑) move up | (↓) move down | (Enter) select";
 
-pub fn ui(f: &mut Frame, app: &mut App) {
+pub fn ui_builder(f: &mut Frame, app: &mut App) {
     let rects = Layout::vertical([
         Constraint::Length(3),
         Constraint::Max(1),

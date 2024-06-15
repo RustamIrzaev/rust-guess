@@ -1,6 +1,6 @@
 [package]
-name = "rust-guess-game"
-version = "1.0.0"
+name = "rust-guess"
+version = "1.0.1"
 edition = "2021"
 authors = ["Rustam Irzaiev"]
 description = "Not that simple guessing game - it has terminal UI"

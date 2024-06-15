@@ -406,8 +406,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust-guess-game"
-version = "1.0.0"
+name = "rust-guess"
+version = "1.0.1"
 dependencies = [
  "chrono",
  "colored",

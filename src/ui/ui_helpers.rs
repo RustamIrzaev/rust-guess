@@ -1,5 +1,5 @@
 use ratatui::layout::{Constraint, Layout, Rect};
-use crate::models::Score;
+use crate::models::score::Score;
 
 pub fn constraint_len_calculator(score: &[Score]) -> (u16, u16, u16, u16, u16) {
     let name_len = score

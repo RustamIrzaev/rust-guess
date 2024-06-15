@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufReader, Write};
 use chrono::{DateTime, Local};
-use crate::models::Score;
+use crate::models::score::Score;
 
 const LEADERBOARD_FILE_NAME: &'static str = "scores.json";
 
